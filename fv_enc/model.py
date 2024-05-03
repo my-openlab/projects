@@ -3,10 +3,18 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
-import rlwe_he_scheme_updated as rlwe_updated
+import sys
+sys.path.append('../')
+
+
+import he_scheme.rlwe_he_scheme_updated as rlwe_updated
+
 import numpy as np
 
 if __name__ == '__main__':
+
+    # Set random seed to a specific value (e.g., 42)
+    
     # Scheme's parameters :  static
 
     # polynomial size  : n= 128
@@ -60,7 +68,7 @@ if __name__ == '__main__':
     # the widths of this vectors should be n 
     # plain texts: coeffs. drawn from R_t 
 
-    cst1, cst2, pt1, pt2 = (rlwe_updated.gen_uniform_poly(2**16, t).tolist() for i in range(4))
+    cst1, cst2, pt1, pt2 = (rlwe_updated.gen_uniform_poly(n, t).tolist() for i in range(4))
 
 
     if selected_set == 0: 
@@ -83,17 +91,20 @@ if __name__ == '__main__':
     ct1 = rlwe_updated.encrypt(pk, n, q, t, poly_mod, pt1, std1) 
     ct2 = rlwe_updated.encrypt(pk, n, q, t, poly_mod, pt2, std1)
 
-    print("[+] Ciphertext ct1({}):".format(pt1))
-    print("")
-    print("\t ct1_0:", ct1[0])
-    print("\t ct1_1:", ct1[1])
-    print("")
+    debug = 0
 
-    print("[+] Ciphertext ct2({}):".format(pt2))
-    print("")
-    print("\t ct1_0:", ct2[0])
-    print("\t ct1_1:", ct2[1])
-    print("")
+    if debug ==1:
+        print("[+] Ciphertext ct1({}):".format(pt1))
+        print("")
+        print("\t ct1_0:", ct1[0])
+        print("\t ct1_1:", ct1[1])
+        print("")
+
+        print("[+] Ciphertext ct2({}):".format(pt2))
+        print("")
+        print("\t ct1_0:", ct2[0])
+        print("\t ct1_1:", ct2[1])
+        print("")
 
     # Evaluation
 
@@ -125,27 +136,28 @@ if __name__ == '__main__':
     decrypted_ct6 = rlwe_updated.decrypt(sk, n, q, t, poly_mod, ct6)
 
     # decrypted_ct7 = rlwe_updated.decrypt(sk, n, q, t, poly_mod, ct7)
-
-    print("[+] Decrypted ct3=(ct1 + {}): {} ".format(cst1, decrypted_ct3 ))
     
-    print("[+] Decrypted ct4=(ct2 * {}): {} ".format(cst2, decrypted_ct4 ))
+    if debug ==1:
+        print("[+] Decrypted ct3=(ct1 + {}): {} ".format(cst1, decrypted_ct3 ))
+        
+        print("[+] Decrypted ct4=(ct2 * {}): {} ".format(cst2, decrypted_ct4 ))
     
-    if (decrypted_ct5.size != pt5.size): 
-        # this happens when msb is right most idx value is zero
-        sz = min(decrypted_ct5.size, pt5.size)
+    # Sometimes happens when msb is right most idx value is zero
+    sz = min(decrypted_ct5.size, pt5.size)
 
-    if ~(decrypted_ct5[0:sz-1] == pt5[0:sz-1]).all():
+    if not ((decrypted_ct5[0:sz-1] == pt5[0:sz-1]).all()):
         print ("decrypted_ct5 /= pt5")
-    else:
+
+    if debug ==1:
         print("[+] Decrypted ct5=(ct1 + {} + {} * ct2): {}, expected: {}".format(cst1, cst2, decrypted_ct5, pt5))
 
-    if (decrypted_ct6.size != pt6.size): 
-        sz = min(decrypted_ct6.size, pt6.size)
 
-    if ~(decrypted_ct6[0:sz-1] == pt6[0:sz-1]).all(): 
+    sz = min(decrypted_ct6.size, pt6.size)
+
+    if not ((decrypted_ct6[0:sz-1] == pt6[0:sz-1]).all()): 
         print ("decrypted_ct6 /= pt6")
-    else:
-        print("[+] Decrypted ct6=(ct1 * ct2): {}, expected: {}".format(decrypted_ct6, pt6))
+    
+    print("[+] Decrypted ct6=(ct1 * ct2): {}, expected: {}".format(decrypted_ct6, pt6))
 
     # print("[+] Decrypted ct7=(ct1 * ct2): {}".format(decrypted_ct7))
     # print("[+] pt1 * pt2: {}".format(rlwe_updated.polymul(pt1, pt2, t, poly_mod)))
