@@ -8,14 +8,18 @@ The code doesn't seem to always work. Either there is an algorithmic/parameters 
   <figcaption>Decryption error</figcaption>
 </figure>
 
-I found the error:'my' model.py code was suppose to be :     
+I found the error:'a' model.py code was suppose to be :     
 ```
     cst1, cst2, pt1, pt2 = (rlwe_updated.gen_uniform_poly(n, t).tolist() for i in range(4))
 and not 
     cst1, cst2, pt1, pt2 = (rlwe_updated.gen_uniform_poly(2**16, t).tolist() for i in range(4))
 
 ```
-but this also points to an interesting observation. why should super long plain text cause rounding issues?
+but this **still** doesn't solve rounding issues!!
+<figure style="text-align: center;">
+  <img src="errored_decryption2.png" alt="decryption error">
+  <figcaption>Decryption error: example2</figcaption>
+</figure>
 
 
 # Encryption
