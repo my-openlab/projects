@@ -8,7 +8,7 @@ The code doesn't seem to always work. Either there is an algorithmic/parameters 
   <figcaption>Decryption error</figcaption>
 </figure>
 
-found the error: code was suppose to be :     
+I found the error:'my' model.py code was suppose to be :     
 ```
     cst1, cst2, pt1, pt2 = (rlwe_updated.gen_uniform_poly(n, t).tolist() for i in range(4))
 and not 
@@ -74,9 +74,60 @@ From the given use case, we know public key tuple [pk1, pk0] is pre-computed at 
 for every **m**,
 - sample: r1,r2: normal distribution in R
           u : binary, uniform distribution sample from R
-- block_A operation is independent of block_B and Block_D, provided **u** is saved for use in block_B
-- 
+- block_A  and block_B operation is independent of Block_D, provided **u** is saved for use in block_B
+- Since q and t are constant $\Delta=\lfloor q/t \rfloor$ is also constant and can be expressed as a power of 2. Hence, scaling is just a left-shift operation on the individual fields of incoming message vector m. 
 
+In our particular case i.e. for parameter sets A and B, m is left shifts of 24 and 448 respectively. It is good to note that even after scaling, field elements of 'scaled_m' is never greater than 'q'. So no overflows occur after scaling of field values and can still be represented in 'log2(q)' bits. In our case, it is 32 and 512 bit for parameter sets A and B respectively.
+
+In summary, reducing the latency of encryption is constrained to calculation of one **poly_add** function.
+
+```python
+ct0 = polyadd(sum_pk0_e1, scaled_m, q, poly_mod)
+```
+Taking a closer look at this implementation.
+
+```python
+def polyadd(x, y, modulus, poly_mod):
+    """Add two polynomials
+    Args:
+        x, y: two polynoms to be added.
+        modulus: coefficient modulus.
+        poly_mod: polynomial modulus.
+    Returns:
+        A polynomial in Z_modulus[X]/(poly_mod).
+    """
+    return np.int64(
+        np.round(poly.polydiv(poly.polyadd(x, y) %
+                              modulus, poly_mod)[1] % modulus)
+    )
+```
+The poly.polydiv is in place to ensure the result of the first addition is still in "poly_mod" space. 
+since we know both 'x' and 'y' passed here are already in 'poly_mod' we can safely ignore the poly_div operation. 
+
+In other words, 'polyadd' can be simplified to element wise addition of **sum_pk0_e1** and **scaled_m** and then taking modulus of each element w.r.t. 'q'. We know that both 
+
+$ \sum_{i=0}^{i=q-1}ct_0[i] =  sum\_pk0\_e1[i] + scaled\_m[i], \forall i = 0,1,...(q-1) $
+
+We know that both, $sum\_pk0\_e1, scaled\_m < q$
+
+therefore,
+
+$ct_0[i] < 2*q$
+
+but we need, $ct_0[i] < q$, so we take the modulus w.r.t q or just ignore the msb if it is set. 
+
+or in simple terms, just do log2(q) bit + log2(q) addition ignoring the carry out bit.
+
+```python
+ct0 = (sum_pk0_e1 + scaled_m) 
+ct0 = [ct if ct<q else ct-q for ct in ct0 ] # literally coding %q
+```
+
+Finally, the latency of calculation of encryption boils down how fast we can do multiprecision addition.
+
+we leverage the 27-bit preadders in the DSP48E blocks, 
+
+## 
 
 Design goals: 
    

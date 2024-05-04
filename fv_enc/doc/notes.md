@@ -5,8 +5,7 @@ FPGA DSP48E
 W = 27 bits
 cypher text modulo = 32 or 512
 
-is stored in 
-'t' W-bit words = ceil(32/27) or ceil (512/27) or 2, 19 
+is stored in 't' W-bit words = $\lceil 32/27 \rceil= 2$ or $\lceil 512/27 \rceil= 19$
 
 multiprecision addition takes: 2 or 19 clock cycles
 
