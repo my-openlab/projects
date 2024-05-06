@@ -18,7 +18,14 @@ If c = 1, then
 Else if sum ≥ p 
     then sum ← sum − p.
 ```
-reference article: [FAB](https://bu-icsg.github.io/publications/2023/fhe_accelerator_fpga_hpca2023.pdf)
+
+## Reference articles: 
+- [FAB](https://bu-icsg.github.io/publications/2023/fhe_accelerator_fpga_hpca2023.pdf)
+- [Post-Quantum Cryptographic Hardware Primitives](https://arxiv.org/pdf/1903.03735)
+- [Blog post](https://bit-ml.github.io/blog/post/homomorphic-encryption-toy-implementation-in-python)
+- [Fast Arithmetic Hardware Library For RLWE-Based Homomorphic Encryption](https://ascslab.org/papers/he-library.pdf)
+- [RISE](https://arxiv.org/pdf/2302.07104)
+- [MAD](https://bu-icsg.github.io/publications/2023/Agrawal_MICRO_2023.pdf)
 
 First, a 54-bit limb width enables effective utilization of both the 18 -bit multipliers and the 27 - bit preadders within the DSP slices of the FPGA through multi-word arithmetic [31]. DSP slices have multipliers that are **18×27-bit** wide. Using multi-word arithmetic, we can split 54-bit operands into multiple 18-bit operands and operate over them in parallel. To perform integer additions, we split the 54 -bit operands into two 27-bit operands to leverage the 27-bit preadders in the DSP blocks. Second, a 54-bit limb width allows us to make the most of the scarce on-chip memory resources, which includes both UltraRAM (URAM) and Block-RAM (BRAM). On U 280 cards, a URAM block can store 72-bit wide data and a BRAM block can store 18 -bit wide data. Therefore, with 54 -bit (a multiple of 18) coefficients in the vectors, we can effectively utilize the entire data width of the on-chip memory resources by combining multiple B/URAM blocks to store single/multiple coefficients at a given address.
 
