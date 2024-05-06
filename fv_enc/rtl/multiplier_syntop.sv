@@ -12,22 +12,25 @@ module multiplier_syntop #(parameter int N = 16,    // Length of the input seque
   localparam logic [63:0] PSeed = 64'hACE1ACE1ACE1ACE1;
 
   // AXI stream interface. 1 coefficient of p per cycle.
-  logic  p_vld;
-  logic  p_rdy;
-  logic [QW-1:0] p;
-  logic  p_last;
+  axis_if #(QW) p();
+//  logic  p_vld;
+//  logic  p_rdy;
+//  logic [QW-1:0] p;
+//  logic  p_last;
 
 // AXI stream interface. 1 coefficient of u per cycle.
-  logic  u_vld;
-  logic  u_rdy;
-  logic [UW-1:0] u;
-  logic  u_last;
+  axis_if #(UW) u();
+//  logic  u_vld;
+//  logic  u_rdy;
+//  logic [UW-1:0] u;
+//  logic  u_last;
 
 // AXI stream interface. 1 coefficient of the result z per cycle.
-  logic  z_vld;
-  logic  z_rdy; // ignored, design expects recieving ip to be always ready
-  logic [QW-1:0] z;
-  logic  z_last;
+  axis_if #(QW) z(); 
+//  logic  z_vld;
+//  logic  z_rdy; // ignored, design expects recieving ip to be always ready
+//  logic [QW-1:0] z;
+//  logic  z_last;
   logic s_rst_n;
 
 
@@ -40,31 +43,18 @@ module multiplier_syntop #(parameter int N = 16,    // Length of the input seque
 
 
   // Instantiate multiplier_top
-  multiplier_top #(.N(N), .QW(QW), .UW(UW)) multiplier_top_inst (
-     .clk, .s_rst_n, 
-     .p_vld, .p_rdy, .p, .p_last,
-     .u_vld, .u_rdy, .u, .u_last,
-     .z_vld, .z_rdy, .z, .z_last
-     );
+  multiplier_top #(.N(N), .QW(QW), .UW(UW)) multiplier_top_inst ( .clk, .s_rst_n, .p, .u, .z );
 
   // Instantiate axi_stream_generator module
   axis_gen #(.N(N),.DATAW(QW),.SEED(PSeed)) p_gen_inst (
     .clk(clk),
-    .s_rst_n(s_rst_n),
-    .ready(p_rdy),
-    .valid(p_vld),
-    .last(p_last),
-    .data_out(p)
+    .s_rst_n(s_rst_n), .lfsr_out(p)
   );
 
   // Instantiate axi_stream_generator module
   axis_gen #(.N(N),.DATAW(UW),.SEED(PSeed)) u_gen_inst (
     .clk,
-    .s_rst_n,
-    .ready(u_ready),
-    .valid(u_valid),
-    .last(u_last),
-    .data_out(u)
+    .s_rst_n, .lfsr_out(u)
   );
 
 endmodule
