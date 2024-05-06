@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module synchronizer #(parameter  int N = 2) (
     input logic clk,
     input logic reset,

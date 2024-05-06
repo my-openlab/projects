@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module lfsr_64bit #(parameter logic [63:0] SEED = 64'hFEDCBA9876543210 ) (
     input logic clk,
     input logic s_rst_n,

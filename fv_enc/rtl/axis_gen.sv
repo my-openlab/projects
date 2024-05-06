@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module axis_gen #(parameter int N = 16,
                   int DATAW = 64,
                   logic [DATAW-1:0] SEED = 64'hFEDCBA9876543210 )

@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module multiplier_top #(parameter int N = 16,    // Length of the input sequences
               int QW = 64,   // Bit-width of each input sample
               int UW = 1   // Bit-width of each input sample
@@ -56,14 +57,14 @@ endgenerate
             port_p[1].data <= 'b0;
             port_p[1].vld  <= 'b0;
             port_p[1].last <= 'b0;
-            
+
             port_u[0].data <= 'b0;
             port_u[0].vld  <= 'b0;
             port_u[0].last <= 'b0;
             port_u[1].data <= 'b0;
             port_u[1].vld  <= 'b0;
             port_u[1].last <= 'b0;
-            
+
             port_z[0].data <= 'b0;
             port_z[0].vld  <= 'b0;
             port_z[0].last <= 'b0;

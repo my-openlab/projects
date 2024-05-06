@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module multiplier_syntop_wrapper #(parameter int N = 16,    // Length of the input sequences
                              int QW = 64,   // Bit-width of each input sample
                              int UW = 1   // Bit-width of each input sample
