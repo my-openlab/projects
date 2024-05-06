@@ -43,7 +43,6 @@ module tb_multiplier;
         rstn = 1;  // De-assert reset
         #10;
 
-        
         // Provide test vectors
         // Let's use a simple example where h[n] = {1, 1, 1, 1} and x[n] = {30, 8, 31, 4}
         // Feed input values
@@ -58,7 +57,7 @@ module tb_multiplier;
         @(posedge clk)               p.data = 8; u.data = 1;
         @(posedge clk)               p.data = 31; u.data = 1;
         @(posedge clk)               p.data = 4; u.data = 1;u.last = 1; p.last = 1;
-        @(posedge clk)  u.vld = 0; u.vld = 0; u.last = 0; p.last = 0; // End of valid input stream
+        @(posedge clk)  u.vld = 0; p.vld = 0; u.last = 0; p.last = 0; // End of valid input stream
         
 
         // Wait and observe outputs

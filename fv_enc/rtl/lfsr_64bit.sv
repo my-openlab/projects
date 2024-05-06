@@ -8,12 +8,12 @@ module lfsr_64bit #(parameter logic [63:0] SEED = 64'hFEDCBA9876543210 ) (
 // LFSR state
 logic [63:0] lfsr_state;
 
-// Feedback taps for a 64-bit LFSR (X^64 + X^63 + X^61 + X^60)
+// Feedback taps for a 64-bit LFSR (X^63 + X^62 + X^60 + X^59)
 localparam int LFSRTAPS = 64;
-localparam int TAP1 = 64;
-localparam int TAP2 = 63;
-localparam int TAP3 = 61;
-localparam int TAP4 = 60;
+localparam int TAP1 = 63;
+localparam int TAP2 = 62;
+localparam int TAP3 = 60;
+localparam int TAP4 = 59;
 
 // Initial seed for the LFSR
 localparam logic [63:0] INITSEED = SEED;

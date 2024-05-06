@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
-module multiplier_syntop_wrapper #(parameter int N = 16,    // Length of the input sequences
-                             int QW = 64,   // Bit-width of each input sample
-                             int UW = 1   // Bit-width of each input sample
+module multiplier_syntop_wrapper #(  N = 16,    // Length of the input sequences
+                              QW = 5,   // Bit-width of each input sample
+                              UW = 1   // Bit-width of each input sample
                            ) (
 
   // Synchronous system
@@ -15,4 +15,16 @@ module multiplier_syntop_wrapper #(parameter int N = 16,    // Length of the inp
     .locked(locked)
   );
 
+  reg clk, locked;
+
+    // Clock generation
+  always #5 clk = ~clk;  // 100MHz clock
+  
+      // Initial block for test vectors and reset
+    initial begin
+        clk = 0;
+        locked = 0;
+        #22;  
+        locked = 1;
+    end
 endmodule

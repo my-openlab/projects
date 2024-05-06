@@ -17,10 +17,8 @@ module multiplier_top #(parameter int N = 16,    // Length of the input sequence
 
 axis_if #(QW) port_p[2]();
 
-
 // AXI stream interface. 1 coefficient of u per cycle.
 axis_if #(UW) port_u[2]();
-
 
 // AXI stream interface. 1 coefficient of the result z per cycle.
 axis_if #(QW) port_z[2]();
@@ -112,7 +110,7 @@ endgenerate
             u.rdy          <=   sel_u & u.rdy;
 
 
-            if (sel_z==1) begin
+            if (sel_z==0) begin
                 z.data <= port_z[0].data;
                 z.vld  <= port_z[0].vld;
                 z.last <= port_z[0].last;
