@@ -127,7 +127,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
             end
 
             if (p.last || u.last) begin
-                assert (coeff_cnt_c == N) else $display("time %t:ERROR: N = %d coefficients recieved",$time, coeff_cnt_c);
+                assert (coeff_cnt_c == N) else $display("time %t: ERROR: N = %d coefficients recieved",$time, coeff_cnt_c+1);
                 rdy_c = 0;
                 next_state_c = ST_OSTREAM;
             end
@@ -152,12 +152,13 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
       end
 
       default: begin
-        assert (0) else $display("ERROR: Invalid state reached");
+        assert (0) else $display("time %t: ERROR: Invalid state reached", $time);
         next_state_c = ST_RESET;  // Safe state, should never occur
       end
 
     endcase
   end
+
 
 
   generate 

@@ -1,7 +1,12 @@
 `timescale 1ns / 1ps
+/*
+  MODE =1 , continous back to back packet gen (no slave rdy check), 
+  MODE=0, check for slave rdy
+*/
 module axis_gen #(parameter int N = 16,
                   int DATAW = 64,
-                  logic [DATAW-1:0] SEED = 64'hFEDCBA9876543210 )
+                  logic [DATAW-1:0] SEED = 64'hFEDCBA9876543210,
+                  bit MODE = 1'b0 ) 
 (
     input logic clk,
     input logic s_rst_n,
@@ -31,17 +36,30 @@ always_ff @(posedge clk) begin
         lfsr_out.last <= 'b0;
     end else begin
         lfsr_out.last <= 'b0;
-//        lfsr_out.vld <= lfsr_out.rdy;
-        lfsr_out.vld <= 1;
-               
-//        if (lfsr_out.rdy) begin
+        
+        if (MODE) begin
+            lfsr_out.vld <= 1;
+            
             if (counter == N-1) begin // Reset counter every N cycles
                 counter <= 'b0;
                 lfsr_out.last <= 'b1;
             end else begin
                 counter <= counter + 1'b1;
             end
-//        end
+
+        end else begin
+            lfsr_out.vld <= lfsr_out.rdy;
+            if (lfsr_out.rdy) begin
+                if (counter == N-1) begin // Reset counter every N cycles
+                    counter <= 'b0;
+                    lfsr_out.last <= 'b1;
+                end else begin
+                    counter <= counter + 1'b1;
+                end
+            end
+        end
+          
+
     end
 end
 

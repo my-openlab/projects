@@ -80,11 +80,15 @@ endgenerate
             port_p[0].data <= p.data;
             port_p[1].data <= p.data;
             if (!sel_p) begin
+                port_p[1].vld  <= 0;
+                port_p[1].last <= 0;
                 port_p[0].vld  <= p.vld;
                 port_p[0].last <= p.last;
                 sel_p          <= p.vld & p.last;
                 p.rdy          <= port_p[0].rdy;
             end else begin
+                port_p[0].vld  <= 0;
+                port_p[0].last <= 0;
                 port_p[1].vld  <= p.vld;
                 port_p[1].last <= p.last;
                 sel_p          <= !(p.vld & p.last);
@@ -95,11 +99,15 @@ endgenerate
             port_u[1].data <= u.data;
             
             if (!sel_u) begin
+              port_u[1].vld  <= 0;
+              port_u[1].last <= 0;
               port_u[0].vld  <= u.vld;
               port_u[0].last <= u.last;
               sel_u          <= (u.vld & u.last);
               u.rdy          <= port_u[0].rdy;
             end else begin
+              port_u[0].vld  <= 0;
+              port_u[0].last <= 0;
               port_u[1].vld  <=   u.vld;
               port_u[1].last <=   u.last;
               sel_u          <= !(u.vld & u.last);

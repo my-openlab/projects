@@ -49,14 +49,14 @@ module multiplier_syntop #(parameter int N = 16,    // Length of the input seque
   // Instantiate multiplier_top
   multiplier_top #(.N(N), .QW(QW), .UW(UW)) multiplier_top_inst ( .clk, .s_rst_n, .p, .u, .z );
 
-  // Instantiate axi_stream_generator module
-  axis_gen #(.N(N),.DATAW(QW),.SEED(PSeed)) p_gen_inst (
+  // axi_stream_generator module, MODE =1 => continous back2back packets with no flow cntrl
+  axis_gen #(.N(N),.DATAW(QW),.SEED(PSeed),.MODE(1)) p_gen_inst (
     .clk(clk),
     .s_rst_n(startdata), .lfsr_out(p)
   );
 
   // Instantiate axi_stream_generator module
-  axis_gen #(.N(N),.DATAW(UW),.SEED(PSeed)) u_gen_inst (
+  axis_gen #(.N(N),.DATAW(UW),.SEED(PSeed),.MODE(1)) u_gen_inst (
     .clk,
     .s_rst_n(startdata), .lfsr_out(u)
   );
