@@ -6,7 +6,8 @@ module multiplier_syntop #(parameter int N = 16,    // Length of the input seque
 
   input   clk,
   input   arstn, // async reset, active low
-  input   locked // async reset, active low
+  input   locked, // async reset, active low
+  axis_if.out z
 );
 
   localparam logic [63:0] USeed = 64'hFEDCBA9876543210;
@@ -20,7 +21,7 @@ module multiplier_syntop #(parameter int N = 16,    // Length of the input seque
   axis_if #(UW) u();
 
 // AXI stream interface. 1 coefficient of the result z per cycle.
-  axis_if #(QW) z(); 
+//  axis_if #(QW) z(); 
 
   logic s_rst_n, startdata;
 
@@ -38,12 +39,6 @@ module multiplier_syntop #(parameter int N = 16,    // Length of the input seque
       .async_in(s_rst_n),
       .s_rst_n(startdata)
     );
-
-   axisdump #( .DW(QW), .ADDR_W(ADDRW), .DEPTH(N) ) axisdump_inst (
-    .clk(clk),
-    .s_rst_n(s_rst_n),
-    .stream_in(z) // AXI Stream interface
-   );
 
 
   // Instantiate multiplier_top

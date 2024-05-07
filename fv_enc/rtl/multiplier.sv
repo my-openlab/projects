@@ -11,7 +11,7 @@ and the 'P' is in Rq
     The calculated multiplication result is streamed out in N Clock cycles
   The total latency from getting the last Coeff to getting the last multiplied result is 'N' clocks
 
-  The design has only been synthesized(**lack of time**) only multiiplier  for synthesizability only.
+  The design has only been synthesized(**lack of time**) only multiplier  for synthesizability only.
 
 */
 
@@ -97,7 +97,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
   always_comb begin
 
     // defaults 
-//    start_calc_c = start_calc_r;
+    start_calc_c = start_calc_r;
     next_state_c = current_state_r;
     coeff_cnt_c = 0;
     p_coeff_c = p.data;
@@ -127,7 +127,8 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
             end
 
             if (p.last || u.last) begin
-                assert (coeff_cnt_c == N) else $display("time %t: ERROR: N = %d coefficients recieved",$time, coeff_cnt_c+1);
+                assert (coeff_cnt_c == N) else 
+                   $display("time %t: ERROR: N = %d coefficients recieved",$time, coeff_cnt_c+1);
                 rdy_c = 0;
                 next_state_c = ST_OSTREAM;
             end
@@ -152,7 +153,8 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
       end
 
       default: begin
-        assert (0) else $display("time %t: ERROR: Invalid state reached", $time);
+        assert (0) else 
+           $display("time %t: ERROR: Invalid state reached", $time);
         next_state_c = ST_RESET;  // Safe state, should never occur
       end
 

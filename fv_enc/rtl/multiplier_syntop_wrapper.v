@@ -4,20 +4,24 @@ module multiplier_syntop_wrapper #(  N = 16,    // Length of the input sequences
                               UW = 1   // Bit-width of each input sample
                            ) (
 
-//  // Synchronous system
-//    input   clk,
-//    input  arstn,
-//    input   locked // pll locked active high
+  // Synchronous system
+    input   clk,
+    input  arstn,
+    input   locked, // pll locked active high
+    axis_if.out z
 );
 
-reg  clk, locked,arstn;
-  // Instantiate multiplier module
-  multiplier_syntop #(N, QW, UW) multiplier_syntop_inst (
-    .clk(clk),
-    .arstn(arstn),
-    .locked(locked)
-  );
+// AXI outstream interface. 1 coefficient of the result z per cycle.
+   axis_if #(QW) z(); 
 
+   axisdump #( .DW(QW), .ADDR_W(ADDRW), .DEPTH(N) ) axisdump_inst (
+    .clk(clk),
+    .s_rst_n(s_rst_n),
+    .stream_in(z) // AXI Stream interface
+   );
+
+/*
+reg  clk, locked,arstn;
 //     Clock generation  
     initial begin
       clk = 0;      
@@ -32,5 +36,14 @@ reg  clk, locked,arstn;
         #22;  
         locked = 1;
     end
+ */   
     
+  // Instantiate multiplier module
+  multiplier_syntop #(N, QW, UW) multiplier_syntop_inst (
+    .clk(clk),
+    .arstn(arstn),
+    .locked(locked)
+  );
+
+
 endmodule

@@ -1,5 +1,5 @@
 `timescale 1ns/10ps
-interface axis_if #(parameter int DW =4);
+interface axis_if #(parameter int DW =64);
 
     logic  vld;
     logic  last;

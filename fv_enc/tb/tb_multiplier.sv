@@ -52,6 +52,7 @@ module tb_multiplier;
         @(posedge clk)               p.data = 4; u.data = 1; u.last = 1; p.last = 1;
 
         @(posedge clk)               u.last = 0; p.last = 0;  u.vld = 0; p.vld = 0; // End of valid input stream
+
         // staring new stream
         u.vld = 1; p.vld = 1;        p.data = 24; u.data = 1;
         @(posedge clk)               p.data = 25; u.data = 1;
@@ -65,8 +66,7 @@ module tb_multiplier;
         @(posedge clk)               p.data = 7; u.data = 1;
         @(posedge clk)               p.data = 8; u.data = 1;u.last = 1; p.last = 1;
         @(posedge clk)  u.vld = 0; p.vld = 0; u.last = 0; p.last = 0; // End of valid input stream
-        
-        @(posedge clk) // introduce one extra clock cycle delay and 
+
         // staring new stream
         u.vld = 1; p.vld = 1;        p.data = 28; u.data = 1;
         @(posedge clk)               p.data = 29; u.data = 1;
@@ -75,7 +75,6 @@ module tb_multiplier;
         @(posedge clk)  u.vld = 0; p.vld = 0; u.last = 0; p.last = 0; // End of valid input stream
          
          
-        @(posedge clk) // introduce one extra clock cycle delay and 
         // staring new stream
         u.vld = 1; p.vld = 1;        p.data = 9; u.data = 1;
         @(posedge clk)               p.data = 10; u.data = 1;

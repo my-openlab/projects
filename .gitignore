@@ -1,0 +1,14 @@
+*.log
+*.jou
+vivado*.*
+*.svg
+*.aux
+fv_enc/project_*/*.cache
+fv_enc/project_*/*.ip_user_files
+fv_enc/project_*/*.hw
+fv_enc/project_*/*.runs
+fv_enc/project_*/*.sim
+fv_enc/project_*/*.sim
+fv_enc/doc/*.fdb*
+fv_enc/doc/*.fls
+fv_enc/doc/*.sync*
