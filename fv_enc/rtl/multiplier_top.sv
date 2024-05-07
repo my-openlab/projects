@@ -7,12 +7,10 @@ module multiplier_top #(parameter int N = 16,    // Length of the input sequence
   input logic  clk,
   input logic  s_rst_n, // synchronous reset, active low
 
-  // AXI stream interface. 1 coefficient of p per cycle.
-  axis_if.in p,
-  // AXI stream interface. 1 coefficient of u per cycle.
-  axis_if.in u,
-  // AXI stream interface. 1 coefficient of the result z per cycle.
-  axis_if.out z
+  
+  axis_if.in p, // AXI stream interface. 1 coefficient of p per cycle.
+  axis_if.in u, // AXI stream interface. 1 coefficient of u per cycle.
+  axis_if.out z // AXI stream interface. 1 coefficient of the result z per cycle.
 );
 
 axis_if #(QW) port_p[2]();
@@ -73,54 +71,57 @@ endgenerate
 
         end else begin
 
-            if (p.vld & p.last)
-                sel_p <= !sel_p;
-
-            if (u.vld & u.last)
-                sel_u <= !sel_u;
-
-            if (port_z[0].vld & port_z[0].last)
-                sel_z <= !sel_z;
-
 
             // would have been best to pass it to a task 
             // call it repeatedly. but axis_if as a datatype is 
             // not supported in task unless axis_if is virtual
 
-            port_p[0].data <=          p.data;
-            port_p[0].vld  <=   !sel_p & p.vld;
-            port_p[0].last <=   !sel_p & p.last;
-            p.rdy          <=   !sel_p & p.rdy;
 
+            port_p[0].data <= p.data;
+            port_p[1].data <= p.data;
+            if (!sel_p) begin
+                port_p[0].vld  <= p.vld;
+                port_p[0].last <= p.last;
+                sel_p          <= p.vld & p.last;
+                p.rdy          <= port_p[0].rdy;
+            end else begin
+                port_p[1].vld  <= p.vld;
+                port_p[1].last <= p.last;
+                sel_p          <= !(p.vld & p.last);
+                p.rdy          <= port_p[1].rdy;
+            end 
+            
+            port_u[0].data <= u.data;
+            port_u[1].data <= u.data;
+            
+            if (!sel_u) begin
+              port_u[0].vld  <= u.vld;
+              port_u[0].last <= u.last;
+              sel_u          <= (u.vld & u.last);
+              u.rdy          <= port_u[0].rdy;
+            end else begin
+              port_u[1].vld  <=   u.vld;
+              port_u[1].last <=   u.last;
+              sel_u          <= !(u.vld & u.last);
+              u.rdy          <=   port_u[1].rdy;
+            end 
+            
 
-            port_p[1].data <=           p.data;
-            port_p[1].vld  <=   sel_p & p.vld;
-            port_p[1].last <=   sel_p & p.last;
-            p.rdy          <=   sel_p & p.rdy;
-
-            port_u[0].data <=            u.data;
-            port_u[0].vld  <=   !sel_u & u.vld;
-            port_u[0].last <=   !sel_u & u.last;
-            u.rdy          <=   !sel_u & u.rdy;
-
-
-            port_u[1].data <=           u.data;
-            port_u[1].vld  <=   sel_u & u.vld;
-            port_u[1].last <=   sel_u & u.last;
-            u.rdy          <=   sel_u & u.rdy;
-
-
-            if (sel_z==0) begin
+            if (!sel_z) begin
                 z.data <= port_z[0].data;
                 z.vld  <= port_z[0].vld;
                 z.last <= port_z[0].last;
+                port_z[0].rdy <=  z.rdy;
+                sel_z <= port_z[0].vld & port_z[0].last;
             end else begin
                 z.data <= port_z[1].data;
                 z.vld  <= port_z[1].vld;
                 z.last <= port_z[1].last;
+                port_z[1].rdy <= z.rdy;
+                sel_z <= !(port_z[1].vld & port_z[1].last);
             end
-            port_z[1].rdy <=  (!sel_z) & z.rdy;
-            port_z[0].rdy <=  (sel_z) & z.rdy;
+            
+            
         end
     end
 

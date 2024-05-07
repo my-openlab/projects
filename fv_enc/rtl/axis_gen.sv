@@ -6,10 +6,6 @@ module axis_gen #(parameter int N = 16,
     input logic clk,
     input logic s_rst_n,
     axis_if.out lfsr_out
-    // input logic ready,
-    // output logic valid,
-    // output logic last,
-    // output logic [DATAW-1:0] data_out
 );
 
 localparam int CntBitW = $clog2(N);
@@ -35,15 +31,17 @@ always_ff @(posedge clk) begin
         lfsr_out.last <= 'b0;
     end else begin
         lfsr_out.last <= 'b0;
-        lfsr_out.vld <= lfsr_out.rdy;
-        if (lfsr_out.rdy) begin
+//        lfsr_out.vld <= lfsr_out.rdy;
+        lfsr_out.vld <= 1;
+               
+//        if (lfsr_out.rdy) begin
             if (counter == N-1) begin // Reset counter every N cycles
                 counter <= 'b0;
                 lfsr_out.last <= 'b1;
             end else begin
                 counter <= counter + 1'b1;
             end
-        end
+//        end
     end
 end
 

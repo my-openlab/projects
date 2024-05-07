@@ -53,10 +53,17 @@ module tb_multiplier;
 
         @(posedge clk)               u.last = 0; p.last = 0;  u.vld = 0; p.vld = 0; // End of valid input stream
         // staring new stream
-        u.vld = 1; p.vld = 1; p.data = 30; u.data = 1;
-        @(posedge clk)               p.data = 8; u.data = 1;
-        @(posedge clk)               p.data = 31; u.data = 1;
-        @(posedge clk)               p.data = 4; u.data = 1;u.last = 1; p.last = 1;
+        u.vld = 1; p.vld = 1;        p.data = 24; u.data = 1;
+        @(posedge clk)               p.data = 25; u.data = 1;
+        @(posedge clk)               p.data = 26; u.data = 0;
+        @(posedge clk)               p.data = 27; u.data = 1;u.last = 1; p.last = 1;
+        @(posedge clk)  u.vld = 0; p.vld = 0; u.last = 0; p.last = 0; // End of valid input stream
+        
+        // staring new stream
+        u.vld = 1; p.vld = 1;        p.data = 3; u.data = 1;
+        @(posedge clk)               p.data = 4; u.data = 0;
+        @(posedge clk)               p.data = 5; u.data = 1;
+        @(posedge clk)               p.data = 6; u.data = 1;u.last = 1; p.last = 1;
         @(posedge clk)  u.vld = 0; p.vld = 0; u.last = 0; p.last = 0; // End of valid input stream
         
 

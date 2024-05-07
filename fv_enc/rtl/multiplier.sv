@@ -14,8 +14,11 @@ and the 'P' is in Rq
   The design has only been synthesized(**lack of time**) only multiiplier  for synthesizability only.
 
 */
-module multiplier #(parameter int N = 4,    // Length of the input sequences
-              int QW = 5,   // Bit-width of each input sample
+
+
+
+module multiplier #(parameter int N = 16,    // Length of the input sequences
+              int QW = 64,   // Bit-width of each input sample
               int UW = 1   // Bit-width of each input sample
   ) (
   // Synchronous system
@@ -28,8 +31,10 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
   axis_if.out z // output starts streaming after the last coeff in
 );
 
+
   localparam int CoeffCntBitW = $clog2(N);
   // localparam Qmodulo = 2**QW -1; // to count upto 2N-1
+
 
   // local signals
   // convention: _r: registered, _c: combinational
@@ -40,9 +45,10 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
   logic z_last_c;
   logic rdy_c; // common rdy for p,u interface
 
+
   // memory array  to hold incoming coeffs
-  logic [QW-1:0] p_coeff_r[N],p_c;
-  logic [UW-1:0] u_coeff_r[N],u_c;
+  logic [QW-1:0] p_coeff_r[N],p_coeff_c;
+  logic [UW-1:0] u_coeff_r[N],u_coeff_c;
   
   // registers for calculating partial products
   logic [QW-1:0] temp_r[N], temp_c[N];
@@ -73,8 +79,8 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
       current_state_r <= next_state_c; // Transition to the next state
 
       // store in memory
-      p_coeff_r[coeff_cnt_r] <= p_c;
-      u_coeff_r[coeff_cnt_r] <= u_c;
+      p_coeff_r[coeff_cnt_r] <= p_coeff_c;
+      u_coeff_r[coeff_cnt_r] <= u_coeff_c;
 
       temp_r <= temp_c;
       u.rdy <= rdy_c;
@@ -94,8 +100,8 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
 //    start_calc_c = start_calc_r;
     next_state_c = current_state_r;
     coeff_cnt_c = 0;
-    p_c = p.data;
-    u_c = u.data;
+    p_coeff_c = p.data;
+    u_coeff_c = u.data;
     z_vld_c = 0;
     z_last_c = 0;
     rdy_c = 0;
@@ -114,9 +120,14 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
             coeff_cnt_c = coeff_cnt_r +1; //
 
             start_calc_c[coeff_cnt_r] = 1; // start the calculation of partial products one-by-one
+            
+            if (coeff_cnt_c == N) begin
+                rdy_c = 0;
+                next_state_c = ST_OSTREAM;
+            end
 
             if (p.last || u.last) begin
-                assert (coeff_cnt_c == N) else $display("ERROR: N coefficients not recieved");
+                assert (coeff_cnt_c == N) else $display("time %t:ERROR: N = %d coefficients recieved",$time, coeff_cnt_c);
                 rdy_c = 0;
                 next_state_c = ST_OSTREAM;
             end
@@ -135,7 +146,7 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
           coeff_cnt_c = 0;
           z_last_c = 1;
           rdy_c = 1;
-          next_state_c = ST_PP_CALC;  // Safe state
+          next_state_c = ST_PP_CALC;  
         end
 
       end
