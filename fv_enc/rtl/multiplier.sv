@@ -51,7 +51,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
   logic [UW-1:0] u_coeff_r[N],u_coeff_c;
   
   // registers for calculating partial products
-  logic [QW-1:0] temp_r[N], temp_c[N];
+  (* use_dsp = "yes" *) logic [QW-1:0] temp_r[N], temp_c[N];
 
   // Define states
   typedef enum logic [1:0] { ST_RESET, ST_PP_CALC, ST_OSTREAM } state_t;
@@ -162,9 +162,9 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
   end
 
 
-
+// calc and accumulate partial prods 
   generate 
-    for (genvar idx=0; idx < N; idx++) begin : coeff_calc
+    for (genvar idx=0; idx < N; idx++) begin : pprod
       logic [CoeffCntBitW-1:0] p_idx, u_idx;
       always_comb  begin
 
@@ -174,7 +174,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
           p_idx = (coeff_cnt_r-1) & (N-1);
           u_idx = (coeff_cnt_r-1-idx) & (N-1);
 
-          if (u_idx < idx+1)
+          if (u_idx < idx+1) // this take care of correct sign to use 
             temp_c[idx] = (temp_r[idx] + u_coeff_r[u_idx] * p_coeff_r[p_idx]);// & Qmodulo;
           else
             temp_c[idx] = (temp_r[idx] - u_coeff_r[u_idx] * p_coeff_r[p_idx]);// & Qmodulo;
@@ -182,7 +182,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
 
       end
 
-    end : coeff_calc
+    end : pprod
   endgenerate
 
 
