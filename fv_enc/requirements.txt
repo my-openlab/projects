@@ -1,0 +1,8 @@
+cocotb
+cocotb-bus
+cocotbext-axi
+Cython
+exceptiongroup
+find-libpython
+iniconfig
+numpy

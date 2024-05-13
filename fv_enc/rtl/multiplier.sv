@@ -17,8 +17,8 @@ and the 'P' is in Rq
 
 
 
-module multiplier #(parameter int N = 16,    // Length of the input sequences
-              int QW = 64,   // Bit-width of each input sample
+module multiplier #(parameter int N = 4,    // Length of the input sequences
+              int QW = 5,   // Bit-width of each input sample
               int UW = 1   // Bit-width of each input sample
   ) (
   // Synchronous system
@@ -33,6 +33,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
 
 
   localparam int CoeffCntBitW = $clog2(N);
+  const logic [CoeffCntBitW-1:0] ModuloMask = 'b1;
   // localparam Qmodulo = 2**QW -1; // to count upto 2N-1
 
 
@@ -79,13 +80,13 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
       current_state_r <= next_state_c; // Transition to the next state
 
       // store in memory
-      p_coeff_r[coeff_cnt_r] <= p_coeff_c;
-      u_coeff_r[coeff_cnt_r] <= u_coeff_c;
+      p_coeff_r[coeff_cnt_r[CoeffCntBitW-1:0]] <= p_coeff_c;
+      u_coeff_r[coeff_cnt_r[CoeffCntBitW-1:0]] <= u_coeff_c;
 
       temp_r <= temp_c;
       u.rdy <= rdy_c;
       p.rdy <= rdy_c;
-      z.data <= temp_c[coeff_cnt_r & (N-1)];
+      z.data <= temp_c[coeff_cnt_r[CoeffCntBitW-1:0]];
       z.vld <= z_vld_c;
       z.last <= z_last_c;
       start_calc_r <= start_calc_c;
@@ -119,7 +120,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
         if (p.vld && u.vld) begin
             coeff_cnt_c = coeff_cnt_r +1; //
 
-            start_calc_c[coeff_cnt_r] = 1; // start the calculation of partial products one-by-one
+            start_calc_c[coeff_cnt_r[CoeffCntBitW-1:0]] = 1; // start the calculation of partial products one-by-one
             
             if (coeff_cnt_c == N) begin
                 rdy_c = 0;
@@ -147,7 +148,7 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
           coeff_cnt_c = 0;
           z_last_c = 1;
           rdy_c = 1;
-          next_state_c = ST_PP_CALC;  
+          next_state_c = ST_PP_CALC;
         end
 
       end
@@ -168,16 +169,18 @@ module multiplier #(parameter int N = 16,    // Length of the input sequences
       logic [CoeffCntBitW-1:0] p_idx, u_idx;
       always_comb  begin
 
-        temp_c[idx] = temp_r[idx];
+        p_idx = (coeff_cnt_r-1) & ModuloMask;
+        u_idx = (coeff_cnt_r-1-idx) & ModuloMask;
 
         if (start_calc_r[idx]) begin
-          p_idx = (coeff_cnt_r-1) & (N-1);
-          u_idx = (coeff_cnt_r-1-idx) & (N-1);
 
           if (u_idx < idx+1) // this take care of correct sign to use 
             temp_c[idx] = (temp_r[idx] + u_coeff_r[u_idx] * p_coeff_r[p_idx]);// & Qmodulo;
           else
             temp_c[idx] = (temp_r[idx] - u_coeff_r[u_idx] * p_coeff_r[p_idx]);// & Qmodulo;
+
+        end else begin
+          temp_c[idx] = temp_r[idx];
         end
 
       end
