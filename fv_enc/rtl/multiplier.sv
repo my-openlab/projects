@@ -17,8 +17,8 @@ and the 'P' is in Rq
 
 
 
-module multiplier #(parameter int N = 4,    // Length of the input sequences
-              int QW = 5,   // Bit-width of each input sample
+module multiplier #(parameter int N = 16,    // Length of the input sequences
+              int QW = 64,   // Bit-width of each input sample
               int UW = 1   // Bit-width of each input sample
   ) (
   // Synchronous system
@@ -33,14 +33,13 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
 
 
   localparam int CoeffCntBitW = $clog2(N);
-  const logic [CoeffCntBitW-1:0] ModuloMask = 'b1;
   // localparam Qmodulo = 2**QW -1; // to count upto 2N-1
 
 
   // local signals
   // convention: _r: registered, _c: combinational
 
-  logic [CoeffCntBitW + 1-1:0] coeff_cnt_r, coeff_cnt_c;
+  logic [CoeffCntBitW + 2-1:0] coeff_cnt_r, coeff_cnt_c;
   logic [N-1:0] start_calc_r, start_calc_c; // signals to start partial prod calculations
   logic z_vld_c;
   logic z_last_c;
@@ -55,7 +54,7 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
   (* use_dsp = "yes" *) logic [QW-1:0] temp_r[N], temp_c[N];
 
   // Define states
-  typedef enum logic [1:0] { ST_RESET, ST_PP_CALC, ST_OSTREAM } state_t;
+  typedef enum logic [1:0] { ST_RESET, ST_COEFF_STORE, ST_OSTREAM } state_t;
 
   // State variables
   state_t current_state_r, next_state_c;
@@ -80,13 +79,15 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
       current_state_r <= next_state_c; // Transition to the next state
 
       // store in memory
-      p_coeff_r[coeff_cnt_r[CoeffCntBitW-1:0]] <= p_coeff_c;
-      u_coeff_r[coeff_cnt_r[CoeffCntBitW-1:0]] <= u_coeff_c;
+      if (current_state_r == ST_COEFF_STORE) begin
+        p_coeff_r[coeff_cnt_r] <= p_coeff_c;
+        u_coeff_r[coeff_cnt_r] <= u_coeff_c;
+      end
 
       temp_r <= temp_c;
       u.rdy <= rdy_c;
       p.rdy <= rdy_c;
-      z.data <= temp_c[coeff_cnt_r[CoeffCntBitW-1:0]];
+      z.data <= temp_c[coeff_cnt_r & (N-1)];
       z.vld <= z_vld_c;
       z.last <= z_last_c;
       start_calc_r <= start_calc_c;
@@ -110,17 +111,17 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
     case (current_state_r)
 
       ST_RESET: begin
-        next_state_c = ST_PP_CALC;
+        next_state_c = ST_COEFF_STORE;
         start_calc_c = 'b0;
         rdy_c = 1;
       end
 
-      ST_PP_CALC: begin
+      ST_COEFF_STORE: begin
         rdy_c = 1;
         if (p.vld && u.vld) begin
             coeff_cnt_c = coeff_cnt_r +1; //
 
-            start_calc_c[coeff_cnt_r[CoeffCntBitW-1:0]] = 1; // start the calculation of partial products one-by-one
+            start_calc_c[coeff_cnt_r] = 1; // start the calculation of partial products one-by-one
             
             if (coeff_cnt_c == N) begin
                 rdy_c = 0;
@@ -148,7 +149,7 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
           coeff_cnt_c = 0;
           z_last_c = 1;
           rdy_c = 1;
-          next_state_c = ST_PP_CALC;
+          next_state_c = ST_COEFF_STORE;
         end
 
       end
@@ -164,23 +165,21 @@ module multiplier #(parameter int N = 4,    // Length of the input sequences
 
 
 // calc and accumulate partial prods 
-  generate 
+  generate
     for (genvar idx=0; idx < N; idx++) begin : pprod
       logic [CoeffCntBitW-1:0] p_idx, u_idx;
       always_comb  begin
 
-        p_idx = (coeff_cnt_r-1) & ModuloMask;
-        u_idx = (coeff_cnt_r-1-idx) & ModuloMask;
+        temp_c[idx] = temp_r[idx];
+        p_idx = (coeff_cnt_r-1);
+        u_idx = (coeff_cnt_r-1-idx);
 
         if (start_calc_r[idx]) begin
-
-          if (u_idx < idx+1) // this take care of correct sign to use 
-            temp_c[idx] = (temp_r[idx] + u_coeff_r[u_idx] * p_coeff_r[p_idx]);// & Qmodulo;
-          else
-            temp_c[idx] = (temp_r[idx] - u_coeff_r[u_idx] * p_coeff_r[p_idx]);// & Qmodulo;
-
-        end else begin
-          temp_c[idx] = temp_r[idx];
+          if (u_idx < idx+1) begin // this take care of correct sign to use 
+            temp_c[idx] = (temp_r[idx] + u_coeff_r[u_idx] * p_coeff_r[p_idx]);
+          end else begin
+            temp_c[idx] = (temp_r[idx] - u_coeff_r[u_idx] * p_coeff_r[p_idx]);
+          end
         end
 
       end
