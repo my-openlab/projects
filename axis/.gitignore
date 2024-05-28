@@ -1,0 +1,8 @@
+*.ini
+*.wlf
+*.do
+build/*
+*/__pycache__
+*.vstf
+*transcript
+

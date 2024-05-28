@@ -1,0 +1,68 @@
+
+# File: Makefile
+# Author: Purush
+# Date Created: May 24, 2024
+# Last Modified: May 24, 2024
+# Description: initial version of  cocotb Makefile
+# Copyright (c) May 24, 2024 Purush
+# License: All rights reserved
+# Dependencies: 
+# Contact: emailpurush@gmail.com
+# Usage Notes: Untested
+               
+
+# defaults
+SIM ?= questa
+TOPLEVEL_LANG ?= verilog
+PWD = $(shell pwd)
+
+# VERILOG_SOURCES = $(PWD)/rtl/target_dut_top.sv  $(PWD)/rtl/target_dut.sv 
+VERILOG_SOURCES := $(shell cat rtl/sources.lst) axis_tb/axis_fifo_wrapper.sv
+
+# use VHDL_SOURCES for VHDL files
+
+# TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
+TOPLEVEL = axis_fifo_wrapper
+
+# MODULE is the basename of the Python test file
+MODULE = axis_tb.tb_axis_fifo
+
+COMPILE_ARGS += 
+SIM_ARGS += -gui -quiet -gDATA_W=8 -gID_EN=0 -gUSR_EN=0 -gDST_EN=0
+WAVE_FILE = wave.do
+
+BUILD_DIR = build
+
+# verilator build directory
+SIM_BUILD = $(BUILD_DIR)/questa_build
+VHDL_GPI_INTERFACE = vhpi
+# TRACE_DIR ?= build
+
+# TRACE_FILE ?= $(TOPLEVEL)
+
+COCOTB_RESULTS_FILE = $(BUILD_DIR)/results.xml
+
+# COCOTB_HDL_TIMEUNIT = 1ns
+# COCOTB_HDL_TIMEPRECISION = 1ps
+
+
+# include cocotb's make rules to take care of the simulator setup
+include $(shell cocotb-config --makefiles)/Makefile.sim
+
+
+.PHONY:waves
+
+waves: target
+	@echo
+	@echo "### WAVES ###"
+	gtkwave $(TRACE_DIR)/$(TOPLEVEL).vcd
+
+target: cleanall 
+	mkdir -p $(BUILD_DIR); \
+	cd $(BUILD_DIR); \
+	echo $(VERILOG_SOURCES); \
+	make sim;
+
+cleanall: clean
+	rm -rf $(SIM_BUILD)
+
