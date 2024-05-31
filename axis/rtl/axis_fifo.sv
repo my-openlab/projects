@@ -13,20 +13,20 @@ module axis_fifo #
 
 )
 (
-    input  wire                   clk,
-    input  wire                   srst_n,
+    input  logic                   clk,
+    input  logic                   srst_n,
 
     axis_full_if.in  s_axis,// AXI input
-    axis_full_if.out m_axis, // AXI output
+    axis_full_if.out m_axis, // AXI output, once maxis.ready=1 cannot be low without sampling atleast one m_axis.tdata
 
-    input  wire                   pause_req, // Pause
-    output wire                   pause_ack,
+    input  logic                   pause_req, // Pause
+    output logic                   pause_ack,
 
-    output wire [$clog2(DEPTH)-1:0] stat_depth,  // Status
-    output wire [$clog2(DEPTH)-1:0] stat_depth_commit,
-    output wire                   stat_overflow,
-    output wire                   stat_bad_frame,
-    output wire                   stat_good_frame
+    output logic [$clog2(DEPTH)-1:0] stat_depth,  // Status
+    output logic [$clog2(DEPTH)-1:0] stat_depth_commit,
+    output logic                   stat_overflow,
+    output logic                   stat_bad_frame,
+    output logic                   stat_good_frame
 );
 
 localparam int AddrWidth = $clog2(DEPTH);
@@ -41,68 +41,69 @@ localparam int UsrOffset = USR_EN ? DstOffset  + USR_W : DstOffset;
 localparam int FifoWordWidth = UsrOffset;
 
 
-logic [FifoWordWidth-1:0] outdata_c; // final value that goes out of last fifo
+logic [FifoWordWidth-1:0] outdata_r; // final value that goes out of last fifo
 
-logic [FifoWordWidth-1:0] axis_wr_word_c,  axis_rd_word_c;
+logic [FifoWordWidth-1:0] axis_wr_word_c;
+logic [FifoWordWidth-1:0] rd_word_c, rd_word_r[2];
 logic [AddrWidth:0] wr_addr_r, rd_addr_r; // sync FIFO rd/wr ptrs
 logic full;
 logic empty;
 logic wren, rden;
+logic rden_r, pp_rden_r;
+logic rd_word0_valid, rd_word1_valid;
+
 
 // main input fifo
-syncfifo #(.DEPTH(DEPTH), .DATA_W(FifoWordWidth)) ififo_inst(.rdata(axis_rd_word_c),
-                                                     .wdata(axis_wr_word_c),
-                                                     .full,
-                                                     .empty,
-                                                     .clk,
-                                                     .srst_n,
-                                                     .rden,
-                                                     .wren,
-                                                     .stat_depth);
+syncfifo #(.DEPTH(DEPTH), .DATA_W(FifoWordWidth)) ififo_inst(   .rdata(rd_word_c),
+                                                                .wdata(axis_wr_word_c),
+                                                                .full,
+                                                                .empty,
+                                                                .clk,
+                                                                .srst_n,
+                                                                .rden,
+                                                                .wren,
+                                                                .stat_depth,
+                                                                .almost_full());
 
-assign wren = !full && s_axis.tready && s_axis.tvalid;
-assign rden = !empty && ((RAM_PIPELINE>1) ? !pp_full: m_axis.tready);
-assign s_axis.tready = !full;
+
+assign s_axis.tready = !full; // ready to recieve as long as the fifo is not full
+
+assign wren = !full && s_axis.tvalid; // write, if tvalid is high and fifo is not full
+
+assign rden = !empty && m_axis.tready; // read, if sink is ready to recieve
 
 always_ff @(posedge clk ) begin
-    m_axis.tvalid <= (RAM_PIPELINE>1) ? pp_rden : rden;
-    pp_wren_r <= pp_wren;
+    rden_r <= rden;
+
+    if (m_axis.tready) begin
+        {outdata_r, rd_word_r[0]} <= {rd_word_r[0], rd_word_c};
+        rd_word0_valid <= rden_r && !empty;
+        m_axis.tvalid <= !empty;
+
+        if (rd_word1_valid) begin
+           outdata_r <= rd_word_r[1];
+           rd_word1_valid <= 1'b0;
+        end else begin
+          outdata_r <= rd_word_c;
+        end
+
+    end else if (!rden && rden_r) begin
+            rd_word_r[1] <= rd_word_c;
+            rd_word1_valid <= !empty;
+    end
+
+    if (m_axis.tready && m_axis.tvalid)
+        m_axis.tvalid <= |{rd_word0_valid, rden_r};
+
     if (!srst_n) begin
+        rden_r <= 1'b0;
+        rd_word_r <= '{default:'b0};
         m_axis.tvalid <= 1'b0;
+        rd_word0_valid <= 1'b0;
+        rd_word1_valid <= 1'b0;
     end
 end
 
-
-logic pp_full;
-logic pp_empty;
-logic pp_wren, pp_rden;
-logic pp_wren_r;
-
-logic [FifoWordWidth-1:0] pp_rd_word_c, pp_wr_word_c;
-
-// output pipeline fifo
-// this instance is for easing routing by adding extra output pipeline regs
-syncfifo #(.DEPTH(RAM_PIPELINE), .DATA_W(FifoWordWidth)) ofifo_inst(.rdata(pp_rd_word_c),
-                                                      .wdata(pp_wr_word_c),
-                                                      .full(pp_full),
-                                                      .empty(pp_empty),
-                                                      .rden(pp_rden),
-                                                      .wren(pp_wren_r),
-                                                      .clk,
-                                                      .srst_n,
-                                                      .stat_depth()
-                                                     );
-
-assign pp_wren = !pp_full && !empty;
-assign pp_rden = !pp_empty && m_axis.tready;
-assign pp_wr_word_c = axis_rd_word_c;
-
-always_ff @(posedge clk ) begin
-    pp_wren_r <= pp_wren;
-    if (!srst_n) begin
-        pp_wren_r <= 1'b0;
-    end
-end
 
 
 always_comb begin
@@ -113,13 +114,12 @@ always_comb begin
     axis_wr_word_c[DstOffset-1:IdOffset]  = s_axis.tdest;
     axis_wr_word_c[UsrOffset-1:DstOffset] = s_axis.tuser;
 
-    outdata_c = (RAM_PIPELINE>1) ? pp_rd_word_c : axis_rd_word_c;
-    m_axis.tdata = outdata_c[DataOffset-1:0];
-    m_axis.tlast = outdata_c[LastOffset-1];
-    m_axis.tkeep = outdata_c[KeepOffset-1:LastOffset];
-    m_axis.tid   = outdata_c[IdOffset-1:KeepOffset];
-    m_axis.tdest = outdata_c[DstOffset-1:IdOffset];
-    m_axis.tuser = outdata_c[UsrOffset-1:DstOffset];
+    m_axis.tdata = outdata_r[DataOffset-1:0];
+    m_axis.tlast = outdata_r[LastOffset-1];
+    m_axis.tkeep = outdata_r[KeepOffset-1:LastOffset];
+    m_axis.tid   = outdata_r[IdOffset-1:KeepOffset];
+    m_axis.tdest = outdata_r[DstOffset-1:IdOffset];
+    m_axis.tuser = outdata_r[UsrOffset-1:DstOffset];
 end
 
 endmodule
@@ -135,6 +135,7 @@ module syncfifo #(parameter int DEPTH = 8, parameter int DATA_W = 8) (
     output logic [DATA_W-1:0]    rdata,
     output logic     full,
     output logic     empty,
+    output logic     almost_full,
     output logic [$clog2(DEPTH)-1:0]    stat_depth
 
 );
@@ -149,25 +150,23 @@ always_ff @(posedge clk ) begin
         wr_addr_r <= wr_addr_r + 1;
         mem[wr_addr_r[AddrWidth-1:0]] <= wdata;
     end
-    if (!srst_n) begin
-        wr_addr_r <='b0;
-    end
-end
-
-always_ff @(posedge clk ) begin
-
-    rdata <= mem[rd_addr_r[AddrWidth-1:0]];
 
     if (!empty && rden) begin
         rd_addr_r <= rd_addr_r + 1;
     end
+
+    rdata <= mem[rd_addr_r[AddrWidth-1:0]];
+
     if (!srst_n) begin
+        wr_addr_r <='b0;
         rd_addr_r <= 'b0;
     end
 end
-always_ff @(posedge clk ) begin
-    stat_depth <= wr_addr_r - rd_addr_r;
-end
+
+
+assign stat_depth = wr_addr_r - rd_addr_r;
+assign almost_full = ((DEPTH -1 - stat_depth ) ==0);
+
     // empty when pointers match exactly
 assign empty = (wr_addr_r == rd_addr_r);
 // full when first MSB different but rest same

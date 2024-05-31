@@ -49,7 +49,7 @@ class TB:
         self.data_in = np.random.randint(0,(2**8) -1, size=(1,10), dtype='uint8')
         self.log.info(f"{self.data_in[0] = }")
         frame_in = AxiStreamFrame(b''.join(self.data_in[0]), tx_complete=Event())
-        pause_lst = [0,0,0,0,0,1,1,0]#np.random.randint(0,2, size=(1,10), dtype='uint8').tolist()
+        pause_lst = [0,0,0,0,0,0,0,0]#np.random.randint(0,2, size=(1,10), dtype='uint8').tolist()
         self.backpressure(pause_lst, "tx")
         await cocotb.start_soon(self.axis_src.send(frame_in))
         await cocotb.start_soon(self.collect_data(seq_id))
@@ -65,14 +65,17 @@ class TB:
         
 
     async def collect_data(self, seq_id):
-        pause_lst = [0,1,1,1,0,0,0,0]
+        pause_lst = [0,0,0,1]
         self.backpressure(pause_lst,"rx")
         rx = await self.axis_sink.recv()
         self.log.info(f"@{get_sim_time(units='ns')} DONE: recving msg frame ...")
         self.dut_rslt.append(rx.tdata)
+        recvd_data = [x for x in rx.tdata]
         self.log.info(f"Frame {seq_id = }:")
-        self.log.info(f"{self.data_in.tolist() =  }")
-        self.log.info(f"{[x for x in rx.tdata] = }")
+        self.log.info(f"{self.data_in.tolist()[0] =  }")
+        self.log.info(f"{recvd_data = }")
+
+        assert (recvd_data == self.data_in.tolist()[0]), self.log.info(f"Failed ...")
         
 
 
