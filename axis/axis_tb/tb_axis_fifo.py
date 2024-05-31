@@ -49,7 +49,7 @@ class TB:
         self.data_in = np.random.randint(0,(2**8) -1, size=(1,10), dtype='uint8')
         self.log.info(f"{self.data_in[0] = }")
         frame_in = AxiStreamFrame(b''.join(self.data_in[0]), tx_complete=Event())
-        pause_lst = [0,0,0,0,0,0,0,0]#np.random.randint(0,2, size=(1,10), dtype='uint8').tolist()
+        pause_lst = [1,1,1,0]#np.random.randint(0,2, size=(1,10), dtype='uint8').tolist()
         self.backpressure(pause_lst, "tx")
         await cocotb.start_soon(self.axis_src.send(frame_in))
         await cocotb.start_soon(self.collect_data(seq_id))
@@ -65,7 +65,7 @@ class TB:
         
 
     async def collect_data(self, seq_id):
-        pause_lst = [0,0,0,1]
+        pause_lst = [0,0,1,1,1]
         self.backpressure(pause_lst,"rx")
         rx = await self.axis_sink.recv()
         self.log.info(f"@{get_sim_time(units='ns')} DONE: recving msg frame ...")
@@ -85,6 +85,8 @@ async def basic_test(dut):
 
     await tb.reset_routine()
     await tb.send_data(1)
+    await tb.send_data(2)
+    await tb.send_data(3)
     await ClockCycles(tb.dut.clk, 100) # wait for 100 rising edges
 
 

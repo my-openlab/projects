@@ -47,7 +47,7 @@ logic [FifoWordWidth-1:0] axis_wr_word_c;
 logic [FifoWordWidth-1:0] rd_word_c, rd_word_r[2];
 logic [AddrWidth:0] wr_addr_r, rd_addr_r; // sync FIFO rd/wr ptrs
 logic full;
-logic empty;
+logic empty,empty_r;
 logic wren, rden;
 logic rden_r, pp_rden_r;
 logic rd_word0_valid, rd_word1_valid;
@@ -74,22 +74,24 @@ assign rden = !empty && m_axis.tready; // read, if sink is ready to recieve
 
 always_ff @(posedge clk ) begin
     rden_r <= rden;
+    empty_r <= empty;
 
     if (m_axis.tready) begin
         {outdata_r, rd_word_r[0]} <= {rd_word_r[0], rd_word_c};
         rd_word0_valid <= rden_r && !empty;
-        m_axis.tvalid <= !empty;
+        m_axis.tvalid <= rden_r;
 
         if (rd_word1_valid) begin
            outdata_r <= rd_word_r[1];
+           m_axis.tvalid <= 1'b1;
            rd_word1_valid <= 1'b0;
         end else begin
           outdata_r <= rd_word_c;
         end
 
-    end else if (!rden && rden_r) begin
+    end else if ((!rden && rden_r) || (rd_word_c[8] && !empty_r && empty)) begin
             rd_word_r[1] <= rd_word_c;
-            rd_word1_valid <= !empty;
+            rd_word1_valid <= 1'b1;
     end
 
     if (m_axis.tready && m_axis.tvalid)
@@ -97,6 +99,7 @@ always_ff @(posedge clk ) begin
 
     if (!srst_n) begin
         rden_r <= 1'b0;
+        empty_r <= 1'b0;
         rd_word_r <= '{default:'b0};
         m_axis.tvalid <= 1'b0;
         rd_word0_valid <= 1'b0;
